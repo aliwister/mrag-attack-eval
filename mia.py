@@ -492,7 +492,7 @@ if __name__ == "__main__":
     #        exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, is_rag_first=False)
     if args.exp == 3:
         emb_model, preprocess = load_retriever(args.retrieve_model_id, device=device)
-        processes = ['RESIZE', 'CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
+        processes = ['CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
         for process in processes:
             db = build_rag_simple(emb_model, preprocess, train_dataset, 'image', args.rag_size, process)
             for model_id in args.models:

@@ -12,3 +12,9 @@ outputs
 .python-version
 pyprojct.toml
 nohup.out
+*.pdf
+*.log
+*.lock
+.ipynb_checkpoints/
+*.ipynb
+backup/
