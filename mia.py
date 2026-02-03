@@ -383,8 +383,9 @@ def exp_rerank(dataset, db, args, model_id, emb_model, preprocess, rerank_model,
         metrics = compute_metrics_from_predictions(results, labels, indices_top5)
         log_line = f"{elapsed},{size},{args.dataset_id},{model_id},{args.rag_first},{args.wrong_rag_first},{is_rerank},{log},{args.rag_size},{args.retrieve_count},{args.rerank_count},{metrics['accuracy']}, {metrics['precision']}, {metrics['recall']}, {metrics['f1']}, {metrics['retrieval_accuracy']}, {metrics}"
         print(log_line)
-        with open("RESULTS-MIA.log", "a") as f:
-            f.write(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {log_line}\n")
+        with open(f"RESULTS-MIA-{args.dataset_id.split('/')[1]}.log", "a") as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {log_line}\n")
+
         dataset_name = args.dataset_id.split('/')[1]
         filename = f"{map_llm_name(model_id)}__{dataset_name}__mia_output_{size}_ragf={args.rag_first}_wrag={args.wrong_rag_first}_rr={is_rerank}_N={args.rag_size}_n={args.retrieve_count}_k={args.rerank_count}-{r}"
         save_to_file(results, labels, dataset_name,  filename)
@@ -491,17 +492,37 @@ if __name__ == "__main__":
     #        exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, is_rag_first=False)
     if args.exp == 3:
         emb_model, preprocess = load_retriever(args.retrieve_model_id, device=device)
-        processes = ['CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
+        processes = ['RESIZE', 'CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
         for process in processes:
             db = build_rag_simple(emb_model, preprocess, train_dataset, 'image', args.rag_size, process)
             for model_id in args.models:
                 exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, process, log=process)   
 
     if args.exp == 4:
-        process = 'ROTATE'
-        for emb_model in ["dino-vitb14", "siglip-so400m"]:
-            emb_model, preprocess = load_retriever(emb_model, device=device)
-            db = build_rag_simple(emb_model, preprocess, train_dataset, 'image', args.rag_size, process)
-            for model_id in args.models:
-                exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, ['RESIZE'], log=process)   
+        processes = ['MASK', 'ROTATE']
+        for emb_model_id in ["dino-vitb14", "siglip-so400m"]:
+            emb_model, preprocess = load_retriever(emb_model_id, device=device)
+            for process in processes:
+                db = build_rag_simple(emb_model, preprocess, train_dataset, 'image', args.rag_size, process)
+                for model_id in args.models:
+                    exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, ['RESIZE'], log=f"{process}-{emb_model_id}")   
 
+
+
+    if args.exp == 5:
+        process = 'RESIZE'
+        emb_model, preprocess = load_retriever(args.retrieve_model_id, device=device)
+        db = build_rag_simple(emb_model, preprocess, train_dataset, 'image', args.rag_size, process)
+        for model_id in args.models:
+            args.rag_first = 1
+            args.wrong_rag_first = 0
+            exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, process, log=process)  
+            args.rag_first = 0
+            args.wrong_rag_first = 0
+            exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, process, log=process)   
+            args.rag_first = 0
+            args.wrong_rag_first = 1
+            exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, process, log=process)   
+            args.rag_first = 1
+            args.wrong_rag_first = 1
+            exp_rerank(test_dataset, db, args, model_id, emb_model, preprocess, rerank_model, process, log=process)   

@@ -423,7 +423,8 @@ def exp_safety(dataset, db, args, model_id, dataset_id, emb_model, preprocess, r
     save_to_file(results,gt_captions,  filename)
     print(log_line)
     with open("RESULTS2.log", "a") as f:
-        f.write(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {log_line}\n")
+        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {log_line}\n")
+
 
 
 def get_dataset(dataset_id, rag_size, limit):
@@ -525,7 +526,8 @@ if __name__ == "__main__":
     if args.exp == 1:
         process = 'RESIZE'
         model_id = args.models[0]
-        for dataset_id in args.datasets:
+        datasets = ["pasindu/google_conceptual_captions_20000", "eltorio/ROCOv2-radiology"]
+        for dataset_id in datasets:
             train_dataset, test_dataset, rag_size, limit = get_dataset(dataset_id, args.rag_size, args.limit)
             print(f"Dataset: {dataset_id} Train size: {len(train_dataset)} Test size: {len(test_dataset)}")
 
@@ -557,7 +559,7 @@ if __name__ == "__main__":
 
 
     elif args.exp == 3:
-        processes = ['CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
+        processes = ['RESIZE', 'CROP', 'MASK', 'BLUR','ERASE','ROTATE', 'G-NOISE']
         for dataset_id in args.datasets:
             train_dataset, test_dataset, rag_size, limit = get_dataset(dataset_id, args.rag_size, args.limit)
             print(f"Dataset: {dataset_id} Train size: {len(train_dataset)} Test size: {len(test_dataset)}")
