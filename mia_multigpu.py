@@ -3,7 +3,7 @@ from datetime import datetime
 
 from dataclasses import dataclass
 from datasets import Dataset, load_dataset
-from transformers import AutoModel, pipeline
+from transformers import AutoModel, AutoTokenizer, pipeline
 from util.image import *
 from util.llms import map_llm_name
 from util.metrics import * 
@@ -381,9 +381,18 @@ def build_pipeline(model_id: str, batch_size: int = 16):
 
     print(f"[build_pipeline] {n} GPU(s) detected. max_memory={max_memory}")
 
+    # Load tokenizer separately so we can set padding_side='left'.
+    # Decoder-only VLMs require left-padding for correct batch generation.
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id,
+        trust_remote_code=True,
+        padding_side="left",
+    )
+
     pipe = pipeline(
         "image-text-to-text",
         model=model_id,
+        tokenizer=tokenizer,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
         device_map="auto",
@@ -417,7 +426,12 @@ def exp_rerank(dataset, db, args, model_id, emb_model, preprocess, rerank_model,
         results = []
         with tqdm(total=len(prompts)) as pbar:
             for out in pipe(prompts, batch_size=args.batch_size, temperature=0.0, do_sample=False):
-                res = [o['generated_text'][-1]['content'] for o in out]
+                # The pipeline may yield either:
+                #   • a list of dicts  (batch_size > 1, single-GPU / no device_map)
+                #   • a single dict    (device_map="auto" always streams one at a time)
+                # Normalise to a list so the extraction below is always correct.
+                batch = out if isinstance(out, list) else [out]
+                res = [o['generated_text'][-1]['content'] for o in batch]
                 results.extend(res)
                 pbar.update(len(res))
 
