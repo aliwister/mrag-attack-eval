@@ -381,23 +381,22 @@ def build_pipeline(model_id: str, batch_size: int = 16):
 
     print(f"[build_pipeline] {n} GPU(s) detected. max_memory={max_memory}")
 
-    # Load tokenizer separately so we can set padding_side='left'.
-    # Decoder-only VLMs require left-padding for correct batch generation.
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_id,
-        trust_remote_code=True,
-        padding_side="left",
-    )
-
     pipe = pipeline(
         "image-text-to-text",
         model=model_id,
-        tokenizer=tokenizer,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         model_kwargs={"max_memory": max_memory},
     )
+
+    # Decoder-only VLMs require left-padding for correct batch generation.
+    # Patch after construction to avoid a transformers collate closure bug
+    # (NameError: f_padding_value) that occurs when a pre-built tokenizer
+    # with padding_side='left' is passed directly to pipeline().
+    if hasattr(pipe, "tokenizer") and pipe.tokenizer is not None:
+        pipe.tokenizer.padding_side = "left"
+
     return pipe
 
 
