@@ -7,6 +7,7 @@ llm_mapper = {
     "llava-hf/llava-v1.6-mistral-7b-hf": "LLaVA-Mistral-7B",
     "Qwen/Qwen3-VL-8B-Instruct": "Qwen3-8B",
     "Qwen/Qwen2.5-VL-32B-Instruct": "Qwen32B",
+    "Qwen/Qwen3-VL-32B-Instruct-FP8": "Qwen32BFP8",
     "Qwen/Qwen2.5-VL-3B-Instruct": "QwenLittle",
 }
 
